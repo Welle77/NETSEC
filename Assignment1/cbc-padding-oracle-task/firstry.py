@@ -60,7 +60,7 @@ def runPOAttack(ciphertext):
  block3 = decryptBlock(cipherblock2, cipherblock3)
  block2 = decryptBlock(cipherblock1, cipherblock2)
     
- print('Successfully decrypted full ciphertext to be - ' + (block2 + block3 + block4).decode().upper())
+ print('Successfully decrypted full ciphertext to be - ' + (block2 + block3 + block4).decode())
 
 def main():
  ciphertext = extractTokenFrom(requests.get(basepath))
