@@ -5,7 +5,6 @@ basepath = 'http://localhost:5000'
 quotepath = basepath + '/quote'
 
 #Based on https://robertheaton.com/2013/07/29/padding-oracle-attack/
-#Might be overcomplicating it, at least it does not seem to work as expected.
 
 def extractTokenFrom(response):
  tokenHeader = response.cookies.get('authtoken')
