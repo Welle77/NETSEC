@@ -26,6 +26,8 @@ def decrypt(ciphertext: bytes) -> bytes:
     """Decrypt a ciphertext using our encryption key."""
     # the IV is stored in the first 16 B of the ciphertext
     iv = ciphertext[:16]
+    print(len(ciphertext))
+    print(ciphertext)
     aes = AES.new(encryption_key, AES.MODE_CBC, iv=iv)
     # decrypt the ciphertext
     plaintext = aes.decrypt(ciphertext[16:])
@@ -40,12 +42,12 @@ def index():
     # create a response object
     response = make_response('<p>Here, have a cookie!</p>')
     # totally secure way to create an authentication token:
-
     # - create a secret plaintext (NB: `{secret}` is substituted for a secret
     # string, which you need to recover)
     plaintext = f'You never figure out that "{secret}". :)'.encode()
     # - encrypt this plaintext
     token = encrypt(plaintext)
+    print(token)
     # - store the ciphertext hex-encoded in a cookie
     response.set_cookie('authtoken', token.hex())
     return response
