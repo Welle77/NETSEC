@@ -6,6 +6,7 @@ import math
 basepath = 'https://cbc.syssec.lnrd.net'
 quotepath = basepath + '/quote'
 
+#secretFromOracleAttack = '<redacted>'
 secretFromOracleAttack = "I should have used authenticated encryption because ..."
 textToEncrypt = secretFromOracleAttack + ' plain CBC is not secure!'
 
@@ -17,7 +18,6 @@ def askPaddingOracle(text: bytearray):
 def askForQuote(text: bytearray):
     cookies = {'authtoken': text.hex()}
     response = requests.get(quotepath, cookies=cookies)
-    print(response.text)
     return response
 
 def encryptBlock(prev, next):
@@ -25,7 +25,7 @@ def encryptBlock(prev, next):
     CipherBytes = bytearray(16)
     dBlock = bytearray(16)
     cMarked = bytearray(16)
-
+    
     for byteindex in range(15, -1, -1):
         paddingvalue = 16 - byteindex
         for index in range(15, byteindex, -1):
@@ -34,7 +34,7 @@ def encryptBlock(prev, next):
         for value in range(0, 256):
             cMarked[byteindex] = value
             blockToSend = cMarked + prev
-
+            print('Trying value: ' + str(value))
             response = askPaddingOracle(blockToSend)
 
             if 'padding is incorrect' not in response.text.lower():
@@ -42,6 +42,7 @@ def encryptBlock(prev, next):
                 dBlock[byteindex] = dByteValue
                 cipherByte = next[byteindex] ^ paddingvalue ^ value
                 CipherBytes[byteindex] = cipherByte
+                print(cipherByte)
                 break
             else:
                 continue
@@ -56,7 +57,7 @@ def main():
     plainTextBlockArray = []
     cipherTextBlockArray = []
     lastCipherBlock = bytearray(16)
-
+    
     for block in range(0, amountOfBlocks):
         plainTextBlockArray.append(
             bytearray(plainTextArray[16*block:16*block+16]))
@@ -73,7 +74,7 @@ def main():
     for x in cipherTextBlockArray:
         blockToSend += x
 
-    askForQuote(blockToSend)
+    print(askForQuote(blockToSend).text)
 
 if __name__ == "__main__":
     main()
