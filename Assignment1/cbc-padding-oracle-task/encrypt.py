@@ -2,7 +2,6 @@ import requests
 from Crypto.Util.Padding import pad
 import math
 
-
 #basepath = 'http://localhost:5000'
 basepath = 'https://cbc.syssec.lnrd.net'
 quotepath = basepath + '/quote'

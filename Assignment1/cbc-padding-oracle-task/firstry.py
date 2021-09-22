@@ -19,8 +19,6 @@ def askPaddingOracle(ciphertext):
     return response
 
 # Decrypts a block of 16 bytes
-
-
 def decryptBlock(previousBlock, blockToDecrypt):
     intermediateStateBytes = bytearray(16)
     decryptedPlainText = bytearray(16)
@@ -52,9 +50,6 @@ def decryptBlock(previousBlock, blockToDecrypt):
 
     print('Block is decrypted to be - ' + decryptedPlainText.decode().upper())
     return decryptedPlainText
-
-# Assumes the ciphertext is 4 blocks of 16 bytes, could be made more generic
-
 
 def runPOAttack(ciphertext):
     cipherbytes = (bytes.fromhex(ciphertext))
