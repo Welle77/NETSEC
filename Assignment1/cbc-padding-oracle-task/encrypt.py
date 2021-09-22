@@ -2,28 +2,23 @@ import requests
 from Crypto.Util.Padding import pad
 import math
 
-
 #basepath = 'http://localhost:5000'
 basepath = 'https://cbc.syssec.lnrd.net'
 quotepath = basepath + '/quote'
 
-
 secretFromOracleAttack = "I should have used authenticated encryption because ..."
 textToEncrypt = secretFromOracleAttack + ' plain CBC is not secure!'
-
 
 def askPaddingOracle(text: bytearray):
     cookies = {'authtoken': text.hex()}
     response = requests.get(quotepath, cookies=cookies)
     return response
 
-
 def askForQuote(text: bytearray):
     cookies = {'authtoken': text.hex()}
     response = requests.get(quotepath, cookies=cookies)
     print(response.text)
     return response
-
 
 def encryptBlock(prev, next):
 
@@ -53,7 +48,6 @@ def encryptBlock(prev, next):
 
     return CipherBytes
 
-
 def main():
     encodedText = textToEncrypt.encode()
     textByteArray = bytearray(encodedText)
@@ -80,7 +74,6 @@ def main():
         blockToSend += x
 
     askForQuote(blockToSend)
-
 
 if __name__ == "__main__":
     main()
