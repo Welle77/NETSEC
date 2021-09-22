@@ -1,6 +1,7 @@
 import requests
 import json
 import math
+import sys
 
 basepath = 'http://localhost:5000'
 gradepath = basepath + '/grade'
@@ -36,48 +37,35 @@ def buildSignPath(data):
  return signpath + '/' + data
 
 def main():
- n = json.loads(getPublicKey())['N']
+ N = json.loads(getPublicKey())['N']
  e = json.loads(getPublicKey())['e']
- 
- print(n)
- print(e)
  
  m1Response = signMessage(m1)
  m1Data = json.loads(m1Response.text)
- s1 = m1Data['signature']
- s1 = s1.encode()
+ 
+ s1 = m1Data['signature'].encode()
+ 
  s1Int = int.from_bytes(s1, 'big')
  
  mInt = int.from_bytes(m, 'big')
  m1Int = int.from_bytes(m1, 'big')
  
- x = mInt * (m1Int^1)
- m2Int = x % n
+ x = int((mInt*(1/m1Int)))
+ m2Int = x % N
  
- m2 = m2Int.to_bytes(math.ceil(n.bit_length() / 8), 'big')
- 
+ m2 = m2Int.to_bytes(math.ceil(m2Int.bit_length() / 8), 'big')
+
  m2Response = signMessage(m2)
- m2Data = json.loads(m2Response.text)
  
- s2 = m2Data['signature']
- s2 = s2.encode()
+ s2 = json.loads(m2Response.text)['signature'].encode()
  s2Int = int.from_bytes(s2, 'big')
- 
- sInt = (s1Int * s2Int)^e
- 
- s = sInt.to_bytes(math.ceil(n.bit_length() / 8), 'big')
+
+ sInt = (s1Int*s2Int) %N
  
  mHex = m.hex()
- sHex = s.hex()
+ sHex = (sInt.to_bytes(math.ceil(sInt.bit_length() / 8), 'big')).hex()
  
- print(tryGetQuote(mHex, sHex).text)
- 
- #data = 'tolv'
- #data = data.encode()
- #hex = data.hex()
- #print(signData(hex).content)
- #print(getGradeCookie())
- #print(getPublicKey())
+ response = tryGetQuote(mHex, sHex)
  
 if __name__ == "__main__":
  main()
