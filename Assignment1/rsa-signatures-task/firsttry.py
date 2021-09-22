@@ -37,6 +37,10 @@ def buildSignPath(data):
 
 def main():
  n = json.loads(getPublicKey())['N']
+ e = json.loads(getPublicKey())['e']
+ 
+ print(n)
+ print(e)
  
  m1Response = signMessage(m1)
  m1Data = json.loads(m1Response.text)
@@ -47,7 +51,7 @@ def main():
  mInt = int.from_bytes(m, 'big')
  m1Int = int.from_bytes(m1, 'big')
  
- x = (mInt/m1Int)
+ x = mInt * (m1Int^1)
  m2Int = x % n
  
  m2 = m2Int.to_bytes(math.ceil(n.bit_length() / 8), 'big')
@@ -59,7 +63,7 @@ def main():
  s2 = s2.encode()
  s2Int = int.from_bytes(s2, 'big')
  
- sInt = (s1Int * s2Int) % n
+ sInt = (s1Int * s2Int)^e
  
  s = sInt.to_bytes(math.ceil(n.bit_length() / 8), 'big')
  
