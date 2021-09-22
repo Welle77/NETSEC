@@ -8,7 +8,7 @@ basepath = 'https://cbc.syssec.lnrd.net'
 quotepath = basepath + '/quote'
 
 
-secretFromOracleAttack = "I should have used authenticated encryption because ..."
+secretFromOracleAttack = 'I should have used authenticated encryption because ...'
 textToEncrypt = secretFromOracleAttack + ' plain CBC is not secure!'
 
 
@@ -47,6 +47,7 @@ def encryptBlock(prev, next):
                 dBlock[byteindex] = dByteValue
                 cipherByte = next[byteindex] ^ paddingvalue ^ value
                 CipherBytes[byteindex] = cipherByte
+                print("Adding byte")
                 break
             else:
                 continue
@@ -70,7 +71,7 @@ def main():
     cipherTextBlockArray.append(lastCipherBlock)
 
     for index in range(amountOfBlocks - 1, -1, -1):
-
+        print("Encryptedblock")
         encryptedBlock = encryptBlock(
             cipherTextBlockArray[0], plainTextBlockArray[index])
         cipherTextBlockArray.insert(0, encryptedBlock)
@@ -80,6 +81,7 @@ def main():
         blockToSend += x
 
     askForQuote(blockToSend)
+# flag{tH15_0r4cL3_t31l5_y0u_7O_u53_4u7h3Nt1c4T3d_3NcrYpT10n}
 
 
 if __name__ == "__main__":
