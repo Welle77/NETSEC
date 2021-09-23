@@ -21,12 +21,18 @@ def tryGetQuote(message, signature):
  j = json.dumps({'msg': message, 'signature': signature})
  cookies = {'grade': j}
  response = requests.get(quotepath, cookies = cookies)
- return response
+ return response.text
 
 def signMessage(message):
  hex = message.hex()
  path = buildSignPath(hex)
- return requests.get(path)
+ response = requests.get(path)
+ data = json.loads(response.text)
+ signature = bytes.fromhex(data['signature'])
+ message = bytes.fromhex(data['msg'])
+ signatureInteger = int.from_bytes(signature, 'big')
+ messageInteger = int.from_bytes(message, 'big')
+ return (messageInteger, signatureInteger)
  
 def getPublicKey():
  return requests.get(keypath).text
@@ -37,19 +43,9 @@ def buildSignPath(data):
 def signRandomMessageAttack():
  N = json.loads(getPublicKey())['N']
  
- m1Response = signMessage(randomMessage1)
- m1Data = json.loads(m1Response.text)
- s1 = bytes.fromhex(m1Data['signature'])
- m1 = bytes.fromhex(m1Data['msg'])
- s1Int = int.from_bytes(s1, 'big')
- m1Int = int.from_bytes(m1, 'big')
+ m1Int, s1Int = signMessage(randomMessage1)
  
- m2Response = signMessage(randomMessage2)
- m2Data = json.loads(m2Response.text)
- s2 = bytes.fromhex(m2Data['signature'])
- m2 = bytes.fromhex(m2Data['msg'])
- s2Int = int.from_bytes(s2, 'big')
- m2Int = int.from_bytes(m2, 'big')
+ m2Int, s2Int = signMessage(randomMessage2)
  
  sInt = (s1Int * s2Int) % N
  mInt = (m1Int * m2Int) % N
@@ -60,17 +56,12 @@ def signRandomMessageAttack():
  mHex = m.hex()
  sHex = s.hex()
  
- return tryGetQuote(mHex, sHex).text
+ return tryGetQuote(mHex, sHex)
 
 def signDesiredMessageAttack():
  N = json.loads(getPublicKey())['N']
  
- m1Response = signMessage(randomMessage1)
- m1Data = json.loads(m1Response.text)
- s1 = bytes.fromhex(m1Data['signature'])
- m1 = bytes.fromhex(m1Data['msg'])
- s1Int = int.from_bytes(s1, 'big')
- m1Int = int.from_bytes(m1, 'big')
+ m1Int, s1Int = signMessage(randomMessage1)
  
  mInt = int.from_bytes(desiredMessage, 'big')
  
@@ -80,14 +71,7 @@ def signDesiredMessageAttack():
  bytelength = math.ceil(m2Int.bit_length() /8)
  m2Bytes = m2Int.to_bytes(bytelength, 'big')
  
- m2Response = signMessage(m2Bytes)
- m2Data = json.loads(m2Response.text)
- m2Hex = m2Data['msg']
- s2Hex = m2Data['signature']
- s2 = bytes.fromhex(s2Hex)
- m2 = bytes.fromhex(m2Hex)
- 
- s2Int = int.from_bytes(s2, 'big')
+ m2Int, s2Int = signMessage(m2Bytes)
  
  sInt = s1Int * s2Int % N
  
@@ -96,7 +80,7 @@ def signDesiredMessageAttack():
  mHex = desiredMessage.hex()
  sHex = s.hex()
  
- return tryGetQuote(mHex, sHex).text
+ return tryGetQuote(mHex, sHex)
 
 def main():
  print(signRandomMessageAttack())
