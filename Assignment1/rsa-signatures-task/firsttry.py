@@ -4,7 +4,6 @@ import math
 import sys
 
 basepath = 'http://localhost:5000'
-gradepath = basepath + '/grade'
 quotepath = basepath + '/quote'
 keypath = basepath + '/pk'
 signpath = basepath + '/sign_random_document_for_students'
@@ -31,11 +30,6 @@ def signMessage(message):
  
 def getPublicKey():
  return requests.get(keypath).text
- 
-def getGradeCookie():
- response = requests.get(gradepath)
- cookie = response.cookies.get('grade')
- return cookie
 
 def buildSignPath(data):
  return signpath + '/' + data
