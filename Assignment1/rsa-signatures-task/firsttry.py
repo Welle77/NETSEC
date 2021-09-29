@@ -1,9 +1,10 @@
 import requests
 import json
 import math
-import sys
+import base64
+import string
 
-basepath = 'http://localhost:5000'
+basepath = 'https://rsa.syssec.lnrd.net/'
 quotepath = basepath + '/quote'
 keypath = basepath + '/pk'
 signpath = basepath + '/sign_random_document_for_students'
@@ -17,13 +18,23 @@ randomMessage1 = ''.encode()
 #Used for the random message attack
 randomMessage2 = 'This is a test'.encode()
 
-def tryGetQuote(message, signature):
- j = json.dumps({'msg': message, 'signature': signature})
- cookies = {'grade': j}
+def json_to_cookie(j: str) -> str:
+    """Encode json data in a cookie-friendly way using base64."""
+    # The JSON data is a string -> encode it into bytes
+    json_as_bytes = j.encode()
+    # base64-encode the bytes
+    base64_as_bytes = base64.b64encode(json_as_bytes, altchars=b'-_')
+    # b64encode returns bytes again, but we need a string -> decode it
+    base64_as_str = base64_as_bytes.decode()
+    return base64_as_str
+
+def tryGetQuote(msg: bytes, signature: bytes ):
+ j = json.dumps({'msg': msg, 'signature': signature})
+ cookies = {'grade': json_to_cookie(j)}
  response = requests.get(quotepath, cookies = cookies)
  return response.text
 
-def signMessage(message):
+def signMessage(message: bytes):
  hex = message.hex()
  path = buildSignPath(hex)
  response = requests.get(path)
@@ -37,7 +48,7 @@ def signMessage(message):
 def getPublicKey():
  return requests.get(keypath).text
 
-def buildSignPath(data):
+def buildSignPath(data: str):
  return signpath + '/' + data
 
 def signRandomMessageAttack():
@@ -75,7 +86,7 @@ def signDesiredMessageAttack():
  
  sInt = s1Int * s2Int % N
  
- s = sInt.to_bytes(math.ceil(sInt.bit_length() / 8), 'big')
+ s: bytes = sInt.to_bytes(math.ceil(sInt.bit_length() / 8), 'big')
  
  mHex = desiredMessage.hex()
  sHex = s.hex()
@@ -83,7 +94,7 @@ def signDesiredMessageAttack():
  return tryGetQuote(mHex, sHex)
 
 def main():
- print(signRandomMessageAttack())
+ #print(signRandomMessageAttack())
  print(signDesiredMessageAttack())
  
 if __name__ == "__main__":
