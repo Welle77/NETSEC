@@ -7,10 +7,10 @@ import random
 
 system_random = random.SystemRandom()
 
-messageToSign = b'Hello world'
+messageToSign ='This is a message that we want to sign with our awesome cryptosystem'.encode()
 
 saltLength = 32
-modBits = 1024
+modBits = 3072
 
 def EMSA_PSS_ENCODE(M, emBits):
  hash = SHA256.new(M)
@@ -41,7 +41,6 @@ def EMSA_PSS_ENCODE(M, emBits):
  for index in range(0,len(dbMask),1):
   maskedDb[index] = DB[index] ^ dbMask[index]
  
- #NOT correct - should calculate which bits to set.
  numberOfBitsToClear = (8 * emLen) - emBits
  x = 0b11111111
  x = x >> numberOfBitsToClear
@@ -119,7 +118,7 @@ def EMSAPSS_verify(M, EM, emBits):
  if H != Hdot:
      return "inconsistent"
 
- return "VALID SHIT FUCK"
+ return "valid signature"
 
 def RSASSA_PSS_SIGN(privKey: tuple, M):
  encodedMessage = EMSA_PSS_ENCODE(M, modBits - 1)
@@ -159,25 +158,13 @@ def generate_keys(keySize):
 
 def generate_large_prime(keySize):
     while True:
-        num = system_random.randrange(2**(keySize-1), 2**keySize) # 2**keySize means 2^keySize
+        num = system_random.randrange(2**(keySize-1), 2**keySize)
         if Primality.test_probable_prime(num):
             return num
-        
-        # if check_if_prime(num):
-        #     return num
 
-# def check_if_prime(num):
-#     # https://geeksforgeeks.org/python-program-to-check-whether-a-number-is-prime-or-not/
-#     if num > 1:
-#         for i in range(2, int(num/2)+1):
-#             if (num % i) == 0:
-#                 return False
-#             else:
-#                 return True
-#     else:
-#         return False
  
 # region cryptomath module
+# https://github.com/EthanSeaver/Python-Projects/blob/master/hackingciphers_src/cryptomath.py
 # http://inventwithpython.com/hacking (BSD Licensed)
 
 def gcd(a, b):
@@ -207,7 +194,8 @@ def main():
  privKey, pubKey = generate_keys(modBits)
  signature = RSASSA_PSS_SIGN(privKey, messageToSign)
  validity = RSASSA_PSS_VERIFY(pubKey, messageToSign, signature)
- assert validity == "VALID SHIT FUCK"
+ print(validity)
+ assert validity == "valid signature"
  
 if __name__ == "__main__":
  main()
