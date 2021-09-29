@@ -10,7 +10,7 @@ system_random = random.SystemRandom()
 messageToSign = b'Hello world'
 
 saltLength = 32
-modBits = 3072
+modBits = 1024
 
 def EMSA_PSS_ENCODE(M, emBits):
  hash = SHA256.new(M)
@@ -56,32 +56,89 @@ def EMSA_PSS_ENCODE(M, emBits):
 def OS2IP(string):
  return int.from_bytes(string, 'big')
 
-def RSASP1(K, m):
- n = K[0]
- d = K[1]
- assert 0 < m < (n - 1)
- return m**d % n
+def RSAVP1(pubKey, s):
+ n = pubKey[0]
+ e = pubKey[1]
+ assert 0 <= s < (n - 1)
+ return pow(s, e, n)
+
+def RSASP1(privKey, m):
+ n = privKey[0]
+ d = privKey[1]
+ assert 0 <= m < (n - 1)
+ return pow(m, d, n)
 
 def I2OSP(integer):
  return integer.to_bytes(math.ceil(integer.bit_length() /8),'big')
 
-def RSASSA_PSS_SIGN(K: tuple, M):
+def EMSAPSS_verify(M, EM, emBits):
+ mHash = SHA256.new(M)
+ emLen = math.ceil(emBits / 8)
+ hLen = len(mHash.digest())
+ sLen = saltLength
+ if emLen < (hLen + sLen + 2):
+  return "inconsistent EM length"
+ if EM[emLen-1] != 188:
+  return "inconsistent EM last byte"
+
+ leftMostByteCount = emLen - hLen - 1
+ maskedDB = EM[0: leftMostByteCount]
+ H = EM[leftMostByteCount: leftMostByteCount + hLen]
+ leftMostBitCount = (8*emLen) - emBits
+
+ leftMostMaskedByte = maskedDB[0]
+
+ checkByte = leftMostMaskedByte >> (8 - leftMostBitCount)
+ assert checkByte == 0
+
+ dbMask = bytearray(MGF1(H, emLen - hLen - 1, SHA256))
+
+ DB = bytearray(len(dbMask))
+
+ for index in range(0, len(maskedDB), 1):
+  DB[index] = maskedDB[index] ^ dbMask[index]
+  
+ x = 0b11111111
+ x = x >> leftMostBitCount
+ DB[0] &= x
+
+ for index in range (0, (emLen - hLen - sLen - 2),1):
+     if DB[index] != 0:
+         return "inconsistent"
+
+ if DB[emLen-hLen-sLen-2] != 1:
+     return "inconsistent"
+ 
+ salt = DB[len(DB)-sLen:len(DB)]
+ 
+ zeroArray = bytearray(8)
+ Mdot = zeroArray + mHash.digest() + salt
+
+ Hdot = SHA256.new(Mdot).digest()
+
+ if H != Hdot:
+     return "inconsistent"
+
+ return "VALID SHIT FUCK"
+
+def RSASSA_PSS_SIGN(privKey: tuple, M):
  encodedMessage = EMSA_PSS_ENCODE(M, modBits - 1)
  encodedInteger = OS2IP(encodedMessage)
- signaturePrimitive = RSASP1(K, encodedInteger)
+ signaturePrimitive = RSASP1(privKey, encodedInteger)
  signature = I2OSP(signaturePrimitive)
- print(signature)
  return signature
  
 def RSASSA_PSS_VERIFY(pubK, M, S):
- raise NotImplementedError
+ n = pubK[0]
+ k = math.ceil(n.bit_length() / 8)
+ assert len(S) == k
 
-def RSAVP1(pubK, s):
- #Should apply RSASP1 signature primitive - produce signature representative
- raise NotImplementedError
+ s = OS2IP(S)
+ m = RSAVP1(pubK, s)
 
-def EMSA_PSS_VERIFY(M, EM, emBits):
- raise NotImplementedError
+ EM = I2OSP(m)
+ return EMSAPSS_verify(M, EM, modBits - 1)
+ 
 
 def generate_keys(keySize):
     p = generate_large_prime(keySize)
@@ -149,7 +206,8 @@ def findModInverse(a, m):
 def main():
  privKey, pubKey = generate_keys(modBits)
  signature = RSASSA_PSS_SIGN(privKey, messageToSign)
- print(signature)
+ validity = RSASSA_PSS_VERIFY(pubKey, messageToSign, signature)
+ assert validity == "VALID SHIT FUCK"
  
 if __name__ == "__main__":
  main()
