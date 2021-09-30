@@ -5,8 +5,6 @@ import math
 import secrets
 import random
 
-system_random = random.SystemRandom()
-
 messageToSign ='This is a message that we want to sign with our awesome cryptosystem'.encode()
 
 saltLength = 32
@@ -140,16 +138,17 @@ def RSASSA_PSS_VERIFY(pubK, M, S):
  
 
 def generate_keys(keySize):
+    # Inspired by https://www.tutorialspoint.com/cryptography_with_python/cryptography_with_python_creating_rsa_keys.htm
     p = generate_large_prime(keySize)
     q = generate_large_prime(keySize)
     n = p*q
     
     while True:
-        e = system_random.randrange(2**(keySize-1), 2**keySize)
+        e = random.SystemRandom().randrange(2**(keySize-1), 2**keySize)
         if gcd(e,(p-1)*(q-1)) == 1:
             break
 
-    d = findModInverse(e,(p-1)*(q-1))
+    d = find_mod_inverse(e,(p-1)*(q-1))
 
     publicKey = (n, e)
     privateKey = (n, d)
@@ -158,37 +157,18 @@ def generate_keys(keySize):
 
 def generate_large_prime(keySize):
     while True:
-        num = system_random.randrange(2**(keySize-1), 2**keySize)
+        num = random.SystemRandom().randrange(2**(keySize-1), 2**keySize)
         if Primality.test_probable_prime(num):
             return num
 
- 
-# region cryptomath module
-# https://github.com/EthanSeaver/Python-Projects/blob/master/hackingciphers_src/cryptomath.py
-# http://inventwithpython.com/hacking (BSD Licensed)
 
 def gcd(a, b):
-    # Return the GCD of a and b using Euclid's Algorithm
     while a != 0:
         a, b = b % a, a
     return b
 
-
-def findModInverse(a, m):
-    # Returns the modular inverse of a % m, which is
-    # the number x such that a*x % m = 1
-
-    if gcd(a, m) != 1:
-        return None # no mod inverse if a & m aren't relatively prime
-
-    # Calculate using the Extended Euclidean Algorithm:
-    u1, u2, u3 = 1, 0, a
-    v1, v2, v3 = 0, 1, m
-    while v3 != 0:
-        q = u3 // v3 # // is the integer division operator
-        v1, v2, v3, u1, u2, u3 = (u1 - q * v1), (u2 - q * v2), (u3 - q * v3), v1, v2, v3
-    return u1 % m
- # endregion
+def find_mod_inverse(a,m):
+    return pow(a, -1, m)
  
 def main():
  privKey, pubKey = generate_keys(modBits)
