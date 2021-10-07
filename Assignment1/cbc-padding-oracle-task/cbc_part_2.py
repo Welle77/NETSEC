@@ -79,7 +79,7 @@ def main():
     for x in cipherTextBlockArray:
         blockToSend += x
 
-    askForQuote(blockToSend)
+    print(askForQuote(blockToSend).text)
 # flag{tH15_0r4cL3_t31l5_y0u_7O_u53_4u7h3Nt1c4T3d_3NcrYpT10n}
 
 
